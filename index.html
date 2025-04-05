@@ -18,6 +18,18 @@
     </script>
   </head>
   <body class="container mt-4">
+    <div class="mt-4">
+      <h2>Отчеты</h2>
+      <button class="btn btn-primary" onclick="generateTeachersReport()">
+        Отчет «Учителя»
+      </button>
+      <button class="btn btn-primary" onclick="generateStudentsReport()">
+        Отчет «Ведомость»
+      </button>
+      <button class="btn btn-primary" onclick="generateJournalReport()">
+        Отчет «Школьный журнал»
+      </button>
+    </div>
     <!-- Форма "Уроки" -->
     <div id="formLessons" class="form-container">
       <h2>Уроки</h2>
@@ -390,6 +402,24 @@
         });
       // Загружаем уроки при старте
       loadLessons();
+      function generateTeachersReport() {
+        fetch("http://localhost:3000/reports/teachers")
+          .then(() => alert("Отчет «Учителя» создан!"))
+          .catch((err) => console.error("Ошибка:", err));
+      }
+
+      function generateStudentsReport() {
+        fetch("http://localhost:3000/reports/students")
+          .then(() => alert("Отчет «Ведомость» создан!"))
+          .catch((err) => console.error("Ошибка:", err));
+      }
+
+      function generateJournalReport() {
+        const subject = prompt("Введите название предмета:");
+        fetch(`http://localhost:3000/reports/journal?subject=${subject}`)
+          .then(() => alert("Отчет «Школьный журнал» создан!"))
+          .catch((err) => console.error("Ошибка:", err));
+      }
     </script>
   </body>
 </html>
