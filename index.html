@@ -18,18 +18,12 @@
     </script>
   </head>
   <body class="container mt-4">
-    <div class="mt-4">
-      <h2>Отчеты</h2>
-      <button class="btn btn-primary" onclick="generateTeachersReport()">
-        Отчет «Учителя»
-      </button>
-      <button class="btn btn-primary" onclick="generateStudentsReport()">
-        Отчет «Ведомость»
-      </button>
-      <button class="btn btn-primary" onclick="generateJournalReport()">
-        Отчет «Школьный журнал»
+    <div class="mb-3">
+      <button class="btn btn-primary" onclick="downloadReport('/teachers')">
+        Отчёт об учителях
       </button>
     </div>
+
     <!-- Форма "Уроки" -->
     <div id="formLessons" class="form-container">
       <h2>Уроки</h2>
@@ -205,221 +199,215 @@
     </div>
 
     <script>
-      function sortStudentsBySurname(students) {
-        return students.sort((a, b) => {
-          const surnameA = a.surname.trim();
-          const surnameB = b.surname.trim();
-          return surnameA.localeCompare(surnameB);
-        });
-      }
-
-      let sortOrder = 1; // 1 для сортировки по возрастанию, -1 для убывания
-
-      function sortLessonsByDate(data) {
-        return data.sort((a, b) => {
-          const dateA = new Date(a.date.split(".").reverse().join("-"));
-          const dateB = new Date(b.date.split(".").reverse().join("-"));
-          return (dateA - dateB) * sortOrder;
-        });
-      }
-
-      let currentLessonId = null;
-
-      function formatDate(date) {
-        const d = new Date(date);
-        const day = String(d.getDate()).padStart(2, "0");
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        const year = d.getFullYear();
-        return `${day}.${month}.${year}`;
-      }
-
-      function loadLessons() {
-        fetch("http://localhost:3000/lessons")
-          .then((response) => response.json())
-          .then((data) => {
-            const sortedLessons = sortLessonsByDate(data); // Сортируем уроки по дате
-            const tableBody = document.querySelector("#formLessons tbody");
-            tableBody.innerHTML = "";
-            sortedLessons.forEach((lesson) => {
-              const row = document.createElement("tr");
-
-              // Применяем форматирование даты
-              const formattedDate = formatDate(lesson.date);
-
-              row.innerHTML = `
-          <td>${lesson.subject}</td>
-          <td>${formattedDate}</td>
-          <td>${lesson.theme}</td>
-          <td>${lesson.teacher}</td>
-        `;
-              row.ondblclick = () => showLesson(lesson.id);
-              tableBody.appendChild(row);
-            });
-          })
-          .catch((error) =>
-            console.error("Ошибка при загрузке уроков:", error)
-          );
-      }
-
-      function showLesson(lessonId) {
-        currentLessonId = lessonId;
-        fetch(`http://localhost:3000/lesson/${lessonId}`)
-          .then((response) => response.json())
-          .then((data) => {
-            // Форматируем дату для информации об уроке
-            const formattedDate = formatDate(data.lesson.date);
-
-            document.querySelector("#formLesson tbody").innerHTML = `
-        <tr>
-          <td>${data.lesson.subject}</td>
-          <td>${formattedDate}</td>
-          <td>${data.lesson.theme}</td>
-          <td>${data.lesson.teacher}</td>
-        </tr>
-      `;
-
-            // Обновляем информацию об уроке
-            document.getElementById(
-              "gradeLessonInfo"
-            ).textContent = `${data.lesson.subject} - ${formattedDate} - ${data.lesson.theme}`;
-
-            // Сортируем учеников по фамилии
-            const sortedStudents = sortStudentsBySurname(data.students);
-
-            const studentsTable = document.querySelector(
-              "#formLesson table:nth-of-type(2) tbody"
-            );
-            studentsTable.innerHTML = "";
-            sortedStudents.forEach((student) => {
-              studentsTable.innerHTML += `
-          <tr>
-            <td>${student.surname}</td>
-            <td>${student.name}</td>
-            <td>${student.birthdate}</td>
-            <td>${student.grade || "—"}</td>
-            <td>${student.comment || "—"}</td>
-          </tr>
-        `;
-            });
-
-            showForm("formLesson");
-          })
-          .catch((error) => console.error("Ошибка при загрузке урока:", error));
-      }
-
-      document
-        .querySelector("#formNewLesson form")
-        .addEventListener("submit", (e) => {
-          e.preventDefault();
-          const subject = document.querySelector("#subject").value;
-          const date = document.querySelector("#lessonDate").value;
-          const theme = document.querySelector("#lessonTheme").value;
-
-          console.log({ subject, date, theme });
-          showForm("formLessons");
-        });
-      function loadPupils() {
-        fetch("http://localhost:3000/pupils")
-          .then((response) => response.json())
-          .then((pupils) => {
-            const select = document.getElementById("gradePupil");
-            select.innerHTML = "";
-            pupils.forEach((pupil) => {
-              const option = document.createElement("option");
-              option.value = pupil.id;
-              option.textContent = `${pupil.surname} ${pupil.name}`;
-              select.appendChild(option);
-            });
-          })
-          .catch((error) =>
-            console.error("Ошибка при загрузке учеников:", error)
-          );
-      }
-      function showNewGradeForm() {
-        loadPupils();
-        showForm("formNewGrade");
-      }
-      document.getElementById("saveGradeBtn").addEventListener("click", () => {
-        const pupilId = document.getElementById("gradePupil").value;
-        const gradeValue = document.getElementById("gradeValue").value;
-        const comment = document.getElementById("gradeComment").value;
-
-        fetch("http://localhost:3000/grade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            lessonId: currentLessonId,
-            pupilId: pupilId,
-            grade: gradeValue,
-            comment: comment,
-          }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.message) {
-              alert(data.message);
-
-              showLesson(currentLessonId);
-              showForm("formLesson");
+            console.log("Запуск Puppeteer...");
+      const browser = await puppeteer.launch();
+      console.log("Puppeteer запущен.");
+            function sortStudentsBySurname(students) {
+              return students.sort((a, b) => {
+                const surnameA = a.surname.trim();
+                const surnameB = b.surname.trim();
+                return surnameA.localeCompare(surnameB);
+              });
             }
-          })
-          .catch((error) =>
-            console.error("Ошибка при добавлении оценки:", error)
-          );
-      });
-      document
-        .querySelector("#formNewLesson form")
-        .addEventListener("submit", (e) => {
-          e.preventDefault();
 
-          const subject = document.querySelector("#subject").value;
-          const date = document.querySelector("#lessonDate").value;
-          const theme = document.querySelector("#lessonTheme").value;
+            let sortOrder = 1; // 1 для сортировки по возрастанию, -1 для убывания
 
-          // Отправляем POST-запрос на сервер для добавления нового урока
-          fetch("http://localhost:3000/lesson", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              subject: subject,
-              date: date,
-              theme: theme,
-            }),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.message) {
-                alert(data.message); // Покажем сообщение об успешном добавлении
-                showForm("formLessons"); // Переключаемся на список уроков
-                loadLessons(); // Перезагружаем список уроков
-              }
-            })
-            .catch((error) => {
-              console.error("Ошибка при добавлении урока:", error);
+            function sortLessonsByDate(data) {
+              return data.sort((a, b) => {
+                const dateA = new Date(a.date.split(".").reverse().join("-"));
+                const dateB = new Date(b.date.split(".").reverse().join("-"));
+                return (dateA - dateB) * sortOrder;
+              });
+            }
+
+            let currentLessonId = null;
+
+            function formatDate(date) {
+              const d = new Date(date);
+              const day = String(d.getDate()).padStart(2, "0");
+              const month = String(d.getMonth() + 1).padStart(2, "0");
+              const year = d.getFullYear();
+              return `${day}.${month}.${year}`;
+            }
+
+            function loadLessons() {
+              fetch("http://localhost:3000/lessons")
+                .then((response) => response.json())
+                .then((data) => {
+                  const sortedLessons = sortLessonsByDate(data); // Сортируем уроки по дате
+                  const tableBody = document.querySelector("#formLessons tbody");
+                  tableBody.innerHTML = "";
+                  sortedLessons.forEach((lesson) => {
+                    const row = document.createElement("tr");
+
+                    // Применяем форматирование даты
+                    const formattedDate = formatDate(lesson.date);
+
+                    row.innerHTML = `
+                <td>${lesson.subject}</td>
+                <td>${formattedDate}</td>
+                <td>${lesson.theme}</td>
+                <td>${lesson.teacher}</td>
+              `;
+                    row.ondblclick = () => showLesson(lesson.id);
+                    tableBody.appendChild(row);
+                  });
+                })
+                .catch((error) =>
+                  console.error("Ошибка при загрузке уроков:", error)
+                );
+            }
+
+            function showLesson(lessonId) {
+              currentLessonId = lessonId;
+              fetch(`http://localhost:3000/lesson/${lessonId}`)
+                .then((response) => response.json())
+                .then((data) => {
+                  // Форматируем дату для информации об уроке
+                  const formattedDate = formatDate(data.lesson.date);
+
+                  document.querySelector("#formLesson tbody").innerHTML = `
+              <tr>
+                <td>${data.lesson.subject}</td>
+                <td>${formattedDate}</td>
+                <td>${data.lesson.theme}</td>
+                <td>${data.lesson.teacher}</td>
+              </tr>
+            `;
+
+                  // Обновляем информацию об уроке
+                  document.getElementById(
+                    "gradeLessonInfo"
+                  ).textContent = `${data.lesson.subject} - ${formattedDate} - ${data.lesson.theme}`;
+
+                  // Сортируем учеников по фамилии
+                  const sortedStudents = sortStudentsBySurname(data.students);
+
+                  const studentsTable = document.querySelector(
+                    "#formLesson table:nth-of-type(2) tbody"
+                  );
+                  studentsTable.innerHTML = "";
+                  sortedStudents.forEach((student) => {
+                    studentsTable.innerHTML += `
+                <tr>
+                  <td>${student.surname}</td>
+                  <td>${student.name}</td>
+                  <td>${student.birthdate}</td>
+                  <td>${student.grade || "—"}</td>
+                  <td>${student.comment || "—"}</td>
+                </tr>
+              `;
+                  });
+
+                  showForm("formLesson");
+                })
+                .catch((error) => console.error("Ошибка при загрузке урока:", error));
+            }
+
+            document
+              .querySelector("#formNewLesson form")
+              .addEventListener("submit", (e) => {
+                e.preventDefault();
+                const subject = document.querySelector("#subject").value;
+                const date = document.querySelector("#lessonDate").value;
+                const theme = document.querySelector("#lessonTheme").value;
+
+                console.log({ subject, date, theme });
+                showForm("formLessons");
+              });
+            function loadPupils() {
+              fetch("http://localhost:3000/pupils")
+                .then((response) => response.json())
+                .then((pupils) => {
+                  const select = document.getElementById("gradePupil");
+                  select.innerHTML = "";
+                  pupils.forEach((pupil) => {
+                    const option = document.createElement("option");
+                    option.value = pupil.id;
+                    option.textContent = `${pupil.surname} ${pupil.name}`;
+                    select.appendChild(option);
+                  });
+                })
+                .catch((error) =>
+                  console.error("Ошибка при загрузке учеников:", error)
+                );
+            }
+            function showNewGradeForm() {
+              loadPupils();
+              showForm("formNewGrade");
+            }
+            document.getElementById("saveGradeBtn").addEventListener("click", () => {
+              const pupilId = document.getElementById("gradePupil").value;
+              const gradeValue = document.getElementById("gradeValue").value;
+              const comment = document.getElementById("gradeComment").value;
+
+              fetch("http://localhost:3000/grade", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  lessonId: currentLessonId,
+                  pupilId: pupilId,
+                  grade: gradeValue,
+                  comment: comment,
+                }),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.message) {
+                    alert(data.message);
+
+                    showLesson(currentLessonId);
+                    showForm("formLesson");
+                  }
+                })
+                .catch((error) =>
+                  console.error("Ошибка при добавлении оценки:", error)
+                );
             });
-        });
-      // Загружаем уроки при старте
-      loadLessons();
-      function generateTeachersReport() {
-        fetch("http://localhost:3000/reports/teachers")
-          .then(() => alert("Отчет «Учителя» создан!"))
-          .catch((err) => console.error("Ошибка:", err));
-      }
+            document
+              .querySelector("#formNewLesson form")
+              .addEventListener("submit", (e) => {
+                e.preventDefault();
 
-      function generateStudentsReport() {
-        fetch("http://localhost:3000/reports/students")
-          .then(() => alert("Отчет «Ведомость» создан!"))
-          .catch((err) => console.error("Ошибка:", err));
-      }
+                const subject = document.querySelector("#subject").value;
+                const date = document.querySelector("#lessonDate").value;
+                const theme = document.querySelector("#lessonTheme").value;
 
-      function generateJournalReport() {
-        const subject = prompt("Введите название предмета:");
-        fetch(`http://localhost:3000/reports/journal?subject=${subject}`)
-          .then(() => alert("Отчет «Школьный журнал» создан!"))
-          .catch((err) => console.error("Ошибка:", err));
-      }
+                // Отправляем POST-запрос на сервер для добавления нового урока
+                fetch("http://localhost:3000/lesson", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    subject: subject,
+                    date: date,
+                    theme: theme,
+                  }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.message) {
+                      alert(data.message); // Покажем сообщение об успешном добавлении
+                      showForm("formLessons"); // Переключаемся на список уроков
+                      loadLessons(); // Перезагружаем список уроков
+                    }
+                  })
+                  .catch((error) => {
+                    console.error("Ошибка при добавлении урока:", error);
+                  });
+              });
+            // Загружаем уроки при старте
+            loadLessons();
+
+            function downloadReport() {
+              const link = document.createElement("a");
+              link.href = "http://localhost:3000/teachers"; // Укажите правильный адрес сервера
+              link.setAttribute("download", "");
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }
     </script>
   </body>
 </html>

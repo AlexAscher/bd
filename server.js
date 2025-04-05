@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const sql = require("mssql");
+const puppeteer = require("puppeteer"); // Для генерации PDF
 
 const app = express();
 const PORT = 3000;
@@ -53,17 +54,17 @@ app.get("/lessons", async (req, res) => {
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
+
+// Добавление нового урока
 app.post("/lesson", async (req, res) => {
   const { subject, date, theme } = req.body;
 
   try {
-    // Создаём новый запрос
     const request = new sql.Request();
     request.input("subject", sql.NVarChar, subject);
     request.input("date", sql.Date, date);
     request.input("theme", sql.NVarChar, theme);
 
-    // Выполняем параметризованный запрос
     await request.query(`
         INSERT INTO tblLesson (intSubjectId, datLessonDate, txtTheme)
         VALUES (
@@ -79,7 +80,8 @@ app.post("/lesson", async (req, res) => {
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
-// 🔹 Получить оценку и информацию об учениках по урокам
+
+// Получение информации об уроке и учениках
 app.get("/lesson/:id", async (req, res) => {
   const lessonId = req.params.id;
   try {
@@ -121,7 +123,8 @@ app.get("/lesson/:id", async (req, res) => {
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
-// Получить список учеников
+
+// Получение списка учеников
 app.get("/pupils", async (req, res) => {
   try {
     const result = await sql.query(`
@@ -138,6 +141,8 @@ app.get("/pupils", async (req, res) => {
     res.status(500).json({ error: "Ошибка сервера" });
   }
 });
+
+// Добавление оценки
 app.post("/grade", async (req, res) => {
   const { lessonId, pupilId, grade, comment } = req.body;
   try {
@@ -157,6 +162,135 @@ app.post("/grade", async (req, res) => {
   }
 });
 
+// 🔹 Маршрут для генерации PDF-отчета "Учителя"
+app.get("/teachers", async (req, res) => {
+  try {
+    // Запрос к базе данных
+    const teachersQuery = await sql.query(`
+      SELECT 
+        t.txtTeacherName AS teacherName,
+        t.intTeacherYear AS hireYear,        -- Используем intTeacherYear
+        t.fltTeacherSalary AS salary,        -- Используем fltTeacherSalary
+        s.txtSubjectName AS subjectName,
+        s.intSubjectVolume AS hours,         -- Используем intSubjectVolume
+        COUNT(l.intLessonId) AS lessonsCount
+      FROM tblTeacher t
+      LEFT JOIN tblSubject s ON t.intTeacherId = s.intTeacherId
+      LEFT JOIN tblLesson l ON s.intSubjectId = l.intSubjectId
+      GROUP BY t.txtTeacherName, t.intTeacherYear, t.fltTeacherSalary, s.txtSubjectName, s.intSubjectVolume
+    `);
+
+    const teachersData = teachersQuery.recordset;
+
+    // Группируем данные по учителям
+    const groupedData = {};
+    teachersData.forEach((row) => {
+      const {
+        teacherName,
+        hireYear,
+        salary,
+        subjectName,
+        hours,
+        lessonsCount,
+      } = row;
+
+      if (!groupedData[teacherName]) {
+        groupedData[teacherName] = {
+          hireYear,
+          salary,
+          subjects: [],
+          totalSubjects: 0,
+          totalHours: 0,
+        };
+      }
+
+      if (subjectName) {
+        groupedData[teacherName].subjects.push({
+          subjectName,
+          hours,
+          lessonsCount,
+        });
+        groupedData[teacherName].totalSubjects += 1;
+        groupedData[teacherName].totalHours += hours || 0;
+      }
+    });
+
+    // Создаем HTML для PDF
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="ru">
+      <head>
+        <meta charset="UTF-8">
+        <title>Учителя</title>
+        <style>
+          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          th, td { border: 1px solid black; padding: 8px; text-align: left; }
+          hr { margin: 20px 0; }
+          .summary { font-weight: bold; margin-top: 10px; }
+        </style>
+      </head>
+      <body>
+        ${Object.entries(groupedData)
+          .map(
+            ([teacherName, data]) => `
+            <h2>${teacherName}</h2>
+            <p>Год принятия на работу: ${data.hireYear}</p>
+            <p>Оклад: ${data.salary} руб.</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Предмет</th>
+                  <th>Количество часов</th>
+                  <th>Количество уроков</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.subjects
+                  .map(
+                    (subject) => `
+                      <tr>
+                        <td>${subject.subjectName}</td>
+                        <td>${subject.hours}</td>
+                        <td>${subject.lessonsCount}</td>
+                      </tr>
+                    `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
+            <div class="summary">
+              Суммарное количество предметов: ${data.totalSubjects}<br>
+              Суммарное количество часов: ${data.totalHours}
+            </div>
+            <hr>
+          `
+          )
+          .join("")}
+        <p><strong>Общее количество учителей: ${
+          Object.keys(groupedData).length
+        }</strong></p>
+      </body>
+      </html>
+    `;
+
+    // Генерация PDF с помощью Puppeteer
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+    const pdfBuffer = await page.pdf({ format: "A4" });
+    await browser.close();
+
+    // Отправка PDF в ответ
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="Учителя.pdf"');
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error("Ошибка при создании отчета:", err);
+    res.status(500).json({ error: "Ошибка сервера" });
+  }
+});
+
+// Запуск сервера
 app.listen(PORT, () => {
   console.log(`Сервер запущен на http://localhost:${PORT}`);
 });
