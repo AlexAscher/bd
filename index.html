@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Уроки</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <script>
+      function showForm(formId) {
+        document.querySelectorAll(".form-container").forEach((form) => {
+          form.style.display = "none"; // Скрываем все формы
+        });
+        document.getElementById(formId).style.display = "block"; // Показываем выбранную форму
+      }
+    </script>
+  </head>
+  <body class="container mt-4">
+    <!-- Форма "Уроки" -->
+    <div id="formLessons" class="form-container">
+      <h2>Уроки</h2>
+      <div class="forscroll" style="max-height: 500px; overflow-y: auto">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Название предмета</th>
+              <th onclick="sortLessonsByDate()" style="cursor: pointer">
+                Дата проведения урока
+              </th>
+              <th>Тема урока</th>
+              <th>ФИО преподавателя</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr ondblclick="showForm('formLesson')">
+              <td>Математика</td>
+              <td>2024-03-09</td>
+              <td>Алгебра</td>
+              <td>Иванов И.И.</td>
+            </tr>
+
+            <tr ondblclick="showForm('formLesson')">
+              <td>Физика</td>
+              <td>2024-03-10</td>
+              <td>Законы Ньютона</td>
+              <td>Смирнова М.В.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <button class="btn btn-success" onclick="showForm('formNewLesson')">
+        Добавить урок
+      </button>
+    </div>
+
+    <div id="formNewLesson" class="form-container" style="display: none">
+      <h2>Новый урок</h2>
+      <form id="newLessonForm">
+        <div class="mb-3">
+          <label for="subject" class="form-label">Предмет</label>
+          <select id="subject" class="form-control">
+            <option>Математика</option>
+            <option>Физика</option>
+            <option>Химия</option>
+            <option>Биология</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="lessonDate" class="form-label">Дата урока</label>
+          <input type="date" id="lessonDate" class="form-control" />
+        </div>
+        <div class="mb-3">
+          <label for="lessonTheme" class="form-label">Тема урока</label>
+          <input type="text" id="lessonTheme" class="form-control" />
+        </div>
+        <div
+          class="forbuttons"
+          style="display: flex; justify-content: space-between"
+        >
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick="showForm('formLessons')"
+          >
+            Отмена
+          </button>
+          <button
+            type="submit"
+            class="btn btn-success"
+            style="align-self: right"
+          >
+            Сохранить
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Форма "Урок" -->
+    <div id="formLesson" class="form-container" style="display: none">
+      <h2>Урок</h2>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Название предмета</th>
+            <th>Дата проведения урока</th>
+            <th>Тема урока</th>
+            <th>ФИО преподавателя</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Математика</td>
+            <td>2024-03-09</td>
+            <td>Алгебра</td>
+            <td>Иванов И.И.</td>
+          </tr>
+        </tbody>
+      </table>
+      <table class="table table-bordered mt-3">
+        <thead>
+          <tr>
+            <th onclick="sortStudentsBySurname()" style="cursor: pointer">
+              Фамилия ученика
+            </th>
+            <th>Имя ученика</th>
+            <th>Дата рождения ученика</th>
+            <th>Оценка</th>
+            <th>Замечания</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Петров</td>
+            <td>Алексей</td>
+            <td>2005-06-12</td>
+            <td>5</td>
+            <td>Хорошо</td>
+          </tr>
+          <tr>
+            <td>Иванова</td>
+            <td>Мария</td>
+            <td>2006-07-15</td>
+            <td>4</td>
+            <td>Нужно улучшить</td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-danger" onclick="showForm('formLessons')">
+        Отмена
+      </button>
+      <button class="btn btn-success" onclick="showNewGradeForm()">
+        Новая оценка
+      </button>
+    </div>
+
+    <!-- Форма "Новая оценка" -->
+    <div id="formNewGrade" class="form-container" style="display: none">
+      <h2>Новая оценка</h2>
+
+      <p id="gradeLessonInfo" style="font-size: 30px">Информация об уроке</p>
+
+      <div class="mb-3">
+        <label for="gradePupil" class="form-label">Ученик:</label>
+        <select id="gradePupil" class="form-control"></select>
+      </div>
+
+      <div class="mb-3">
+        <label for="gradeValue" class="form-label">Оценка:</label>
+        <select id="gradeValue" class="form-control">
+          <option value="5">5</option>
+          <option value="4">4</option>
+          <option value="3">3</option>
+          <option value="2">2</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="gradeComment" class="form-label">Замечания:</label>
+        <input type="text" id="gradeComment" class="form-control" />
+      </div>
+      <div
+        class="forbuttons"
+        style="display: flex; justify-content: space-between"
+      >
+        <button class="btn btn-danger" onclick="showForm('formLesson')">
+          Отмена
+        </button>
+        <button class="btn btn-success" id="saveGradeBtn">Сохранить</button>
+      </div>
+    </div>
+
+    <script>
+      function sortStudentsBySurname(students) {
+        return students.sort((a, b) => {
+          const surnameA = a.surname.trim();
+          const surnameB = b.surname.trim();
+          return surnameA.localeCompare(surnameB);
+        });
+      }
+
+      let sortOrder = 1; // 1 для сортировки по возрастанию, -1 для убывания
+
+      function sortLessonsByDate(data) {
+        return data.sort((a, b) => {
+          const dateA = new Date(a.date.split(".").reverse().join("-"));
+          const dateB = new Date(b.date.split(".").reverse().join("-"));
+          return (dateA - dateB) * sortOrder;
+        });
+      }
+
+      let currentLessonId = null;
+
+      function formatDate(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, "0");
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+      }
+
+      function loadLessons() {
+        fetch("http://localhost:3000/lessons")
+          .then((response) => response.json())
+          .then((data) => {
+            const sortedLessons = sortLessonsByDate(data); // Сортируем уроки по дате
+            const tableBody = document.querySelector("#formLessons tbody");
+            tableBody.innerHTML = "";
+            sortedLessons.forEach((lesson) => {
+              const row = document.createElement("tr");
+
+              // Применяем форматирование даты
+              const formattedDate = formatDate(lesson.date);
+
+              row.innerHTML = `
+          <td>${lesson.subject}</td>
+          <td>${formattedDate}</td>
+          <td>${lesson.theme}</td>
+          <td>${lesson.teacher}</td>
+        `;
+              row.ondblclick = () => showLesson(lesson.id);
+              tableBody.appendChild(row);
+            });
+          })
+          .catch((error) =>
+            console.error("Ошибка при загрузке уроков:", error)
+          );
+      }
+
+      function showLesson(lessonId) {
+        currentLessonId = lessonId;
+        fetch(`http://localhost:3000/lesson/${lessonId}`)
+          .then((response) => response.json())
+          .then((data) => {
+            // Форматируем дату для информации об уроке
+            const formattedDate = formatDate(data.lesson.date);
+
+            document.querySelector("#formLesson tbody").innerHTML = `
+        <tr>
+          <td>${data.lesson.subject}</td>
+          <td>${formattedDate}</td>
+          <td>${data.lesson.theme}</td>
+          <td>${data.lesson.teacher}</td>
+        </tr>
+      `;
+
+            // Обновляем информацию об уроке
+            document.getElementById(
+              "gradeLessonInfo"
+            ).textContent = `${data.lesson.subject} - ${formattedDate} - ${data.lesson.theme}`;
+
+            // Сортируем учеников по фамилии
+            const sortedStudents = sortStudentsBySurname(data.students);
+
+            const studentsTable = document.querySelector(
+              "#formLesson table:nth-of-type(2) tbody"
+            );
+            studentsTable.innerHTML = "";
+            sortedStudents.forEach((student) => {
+              studentsTable.innerHTML += `
+          <tr>
+            <td>${student.surname}</td>
+            <td>${student.name}</td>
+            <td>${student.birthdate}</td>
+            <td>${student.grade || "—"}</td>
+            <td>${student.comment || "—"}</td>
+          </tr>
+        `;
+            });
+
+            showForm("formLesson");
+          })
+          .catch((error) => console.error("Ошибка при загрузке урока:", error));
+      }
+
+      document
+        .querySelector("#formNewLesson form")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          const subject = document.querySelector("#subject").value;
+          const date = document.querySelector("#lessonDate").value;
+          const theme = document.querySelector("#lessonTheme").value;
+
+          console.log({ subject, date, theme });
+          showForm("formLessons");
+        });
+      function loadPupils() {
+        fetch("http://localhost:3000/pupils")
+          .then((response) => response.json())
+          .then((pupils) => {
+            const select = document.getElementById("gradePupil");
+            select.innerHTML = "";
+            pupils.forEach((pupil) => {
+              const option = document.createElement("option");
+              option.value = pupil.id;
+              option.textContent = `${pupil.surname} ${pupil.name}`;
+              select.appendChild(option);
+            });
+          })
+          .catch((error) =>
+            console.error("Ошибка при загрузке учеников:", error)
+          );
+      }
+      function showNewGradeForm() {
+        loadPupils();
+        showForm("formNewGrade");
+      }
+      document.getElementById("saveGradeBtn").addEventListener("click", () => {
+        const pupilId = document.getElementById("gradePupil").value;
+        const gradeValue = document.getElementById("gradeValue").value;
+        const comment = document.getElementById("gradeComment").value;
+
+        fetch("http://localhost:3000/grade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lessonId: currentLessonId,
+            pupilId: pupilId,
+            grade: gradeValue,
+            comment: comment,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.message) {
+              alert(data.message);
+
+              showLesson(currentLessonId);
+              showForm("formLesson");
+            }
+          })
+          .catch((error) =>
+            console.error("Ошибка при добавлении оценки:", error)
+          );
+      });
+      document
+        .querySelector("#formNewLesson form")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+
+          const subject = document.querySelector("#subject").value;
+          const date = document.querySelector("#lessonDate").value;
+          const theme = document.querySelector("#lessonTheme").value;
+
+          // Отправляем POST-запрос на сервер для добавления нового урока
+          fetch("http://localhost:3000/lesson", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              subject: subject,
+              date: date,
+              theme: theme,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.message) {
+                alert(data.message); // Покажем сообщение об успешном добавлении
+                showForm("formLessons"); // Переключаемся на список уроков
+                loadLessons(); // Перезагружаем список уроков
+              }
+            })
+            .catch((error) => {
+              console.error("Ошибка при добавлении урока:", error);
+            });
+        });
+      // Загружаем уроки при старте
+      loadLessons();
+    </script>
+  </body>
+</html>
